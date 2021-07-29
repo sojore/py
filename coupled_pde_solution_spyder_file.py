@@ -87,4 +87,20 @@ plt.semilogy(t,C)
 plt.semilogy(t,P)
 plt.show
 
+
+#plt.semilogy(t,A,label='Cco2')    #--plotting the Components Cco2,CH20,0Co2,0H20 
+#plt.semilogy(t,B,label='CH2o')    #--using the semilogy function for a better scaling for exponentially increasing components
+#plt.ylabel('States(log scale)')
+#plt.title('Adsorption')
+#plt.xlabel('Time')
+#plt.legend('best')
+#plt.show
+
+
+# plt.semilogy(t,A,label='Cco2')   #--plot for component Cco2
+# plt.ylabel('States(log scale)')
+# plt.title('Adsorption')
+# plt.xlabel('Time')
+# plt.legend('best')
+# plt.show
             
