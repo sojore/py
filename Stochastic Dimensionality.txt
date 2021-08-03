@@ -1,0 +1,35 @@
+-- It should be noted that during approximations of  the solutions U(0,x0),the gradients (DxU) and the Hessian (D^2xU),
+-- we put into context the dimensionality of every algorithm on any type of Pde.
+
+-- This affects the rate of convergent which helps in determining the approximations of the actual solutions to the given Pde.
+
+-- Different schemes (algorithms) will provide different approximation solutions at different dimension(d) values,
+-- Some schemes may not give the U(0,x0) approximation solutions because of the divergent behaviour of these algorithms at high dimensions, 
+-- For instance lets have a look at MDBDP scheme (at page 29),this algorithm perfoms pretty well at d=8 but yields poor results, 
+-- for dimensions above 10,
+
+-- So the choice of dimensionality plays a very key role in determining the approximation results of a given Pde, 
+-- Turning to (page 31) for instance ,we can compare 2 schemes 2MDBDP & 2M2DBDP ,at d=1 the 2MDBDP yields the best result but 
+-- 2M2DBDP does not,
+-- Then upon increasing the dimensionality to d=5 ,the 2M2DBDP scheme yileds very good approximations.
+
+-- So now the question is how dimensionality does affect the perfomance of these schemes?,
+-- i.e why we have different schemes  yielding better approximation solutions at different dimensions.
+
+-- And this comes down to the rate of convergent of each scheme(algorithm) which is based on decreasing gradient descent and, 
+-- it depends on the input dimension (see brief explanation on page 16).
+
+-- And again to better understand about the convergent criterion we can look at (page 4) where we being introduced to Lipschitz properties,
+-- on network functions where the pre-described lemma implies that any given component of a Neural Network is  locally Lipschitz on, 
+-- any given space domain (R) and this depends only on the input dimension  d (page 6).
+
+***The  locally Lipchitz continuous function convergent criterion is better explained on (page 6,(2.9))***
+
+
+-- Narrowing down to your specific question, is that the choice of dimension is purely based on the rate of convergent of any given algorithm.
+
+-- For the OneAsset Non linear Pde (which is operated by different algorithms to determine the one with better approximation results),
+-- its dimension (d) is chosen to be 2 based on rate of convergent ,so this implies that at this input dimension(d=2) the scheme yields,
+-- the best approximation solutions unlike for instance when d=1.
+
+--This same logic applies to the merton type.

@@ -1,0 +1,433 @@
+# -*- coding: utf-8 -*-
+"""Deep learning models
+
+from google.colab import drive
+drive.mount('/content/drive')
+
+# Commented out IPython magic to ensure Python compatibility.
+#importing important libraries
+from keras.layers import Input,Lambda,Dense,Flatten
+from keras.models import Model
+from keras.applications.resnet import ResNet,ResNet152
+from keras.applications.densenet import DenseNet,DenseNet201
+from keras.applications.densenet import preprocess_input
+from keras.applications.resnet import preprocess_input
+from keras.preprocessing.image import ImageDataGenerator
+from glob import  glob
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from keras.preprocessing.image import ImageDataGenerator as idg
+from keras.layers import Dropout
+import math
+from keras.preprocessing import image
+import tensorflow as tf
+from tensorflow.keras.layers import Conv2D, Input, ZeroPadding2D,Dropout,AveragePooling2D, BatchNormalization, Activation, MaxPooling2D, Flatten, Dense
+from tensorflow.keras.models import Model, load_model
+from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import f1_score
+from sklearn.utils import shuffle
+import cv2
+import sklearn
+import time
+from os import listdir
+from keras.models import Sequential
+from keras.layers import Dense, Conv2D, MaxPool2D , Flatten
+from keras.preprocessing.image import ImageDataGenerator
+import numpy as np
+import os
+import sys
+import keras
+from keras import layers
+from keras import models
+from keras import optimizers
+from keras.optimizers import SGD
+import glob
+import matplotlib.image as mpimg
+import imageio as im
+from keras import models
+from keras.layers import Dropout
+from keras.callbacks import ModelCheckpoint
+
+# %matplotlib inline
+
+#!pip install  tensorflow-gpu
+
+import tensorflow as tf
+tf.__version__
+
+
+
+
+
+#resize all images
+IMAGE_SIZE=[64,64]
+
+#provide the directory to your dataset folder
+tb_datadir='/content/drive/MyDrive/TB dataset'
+
+os.listdir(tb_datadir) #gives the data in our directory
+
+tuberculosis= "/content/drive/MyDrive/TB dataset/Tuberculosis"
+print("tuberculosis images :\n" ,os.listdir(tuberculosis)[:10])
+
+normal= "/content/drive/MyDrive/TB dataset/Normal data"
+print("\nnormal images :\n" ,os.listdir(normal)[:10])
+
+
+
+
+#lets plot a combination of some normal and tuberculosis data
+rows= 3
+columns= 8
+index_picture= 0
+
+fig= plt.gcf()
+fig.set_size_inches(columns*2, rows*2)
+index_picture+=5
+
+images_of_tuberculosis_data = [os.path.join(tuberculosis, image) for image in os.listdir(tuberculosis)[index_picture-5:index_picture]]
+images_of_normal_data = [os.path.join(normal, image) for image in os.listdir(normal_data)[index_picture-5:index_picture]]
+
+for imgf, image_path in enumerate(images_of_tuberculosis_data+images_of_normal_data):
+    sp = plt.subplot(rows, columns, imgf + 1)
+    sp.axis('Off') 
+
+    img = mpimg.imread(image_path)
+    plt.imshow(img)
+
+plt.show()
+
+
+
+
+
+# getting the data for training our models
+print("training data :")
+training_datagen= ImageDataGenerator(rescale=1/255, zoom_range=0.3,  width_shift_range= 0.4, height_shift_range=0.3, shear_range=0.1, 
+                                   horizontal_flip=True,  validation_split = 0.2)
+
+training_data = train_datagen.flow_from_directory(tb_datadir, 
+                                              target_size= (64,64),
+                                              class_mode= "binary",
+                                              batch_size=32,
+                                              subset= "training"
+                                              )
+
+# getting the validation or testing data as well
+print("\nvalidation data :")
+validation_datagen= ImageDataGenerator(rescale= 1/255, validation_split= 0.2)
+
+validation_data= train_datagen.flow_from_directory(tb_datadir, 
+                                              target_size= (64,64),
+                                              class_mode= "binary",
+                                              batch_size=32,
+                                              shuffle= False,
+                                              subset= "validation"
+                                              )
+
+
+
+
+
+#applying High-frequency Emphasis filtering on our data to generate samples with HEF filtering for better improved models perfomance
+
+from PIL import Image
+img = Image.open('/content/drive/MyDrive/TB dataset/Normal data/Normal-1.png')
+img
+
+import numpy as np
+
+#setting a sample of images to the High-frequency Emphasis filtering to obtain a dense frequency of the sample images
+npFFT = np.fft.fft2(img) # Calculate FFT
+npFFTS = np.fft.fftshift(npFFT)  # Shift the FFT to center it
+
+npFFT = np.fft.fft2(img1)
+npFFTS = np.fft.fftshift(npFFT)
+
+npFFT = np.fft.fft2(img2)
+npFFTS = np.fft.fftshift(npFFT)
+
+npFFT = np.fft.fft2(img3)
+npFFTS = np.fft.fftshift(npFFT)
+
+npFFT = np.fft.fft2(img4)
+npFFTS = np.fft.fftshift(npFFT)
+npFFTS
+
+#High-pass Gaussian filter
+(P, Q,R) = npFFTS.shape
+H = np.zeros((P,Q))
+D0 = 40
+for u in range(P):
+    for v in range(Q):
+        H[u, v] = 1.0 - np.exp(- ((u - P / 2.0) ** 2 + (v - Q / 2.0) ** 2) / (2 * (D0 ** 2)))
+k1 = 0.5 ; k2 = 0.75
+HFEfilt = k1 + k2 * H # Apply High-frequency emphasis
+
+HFEfilt = np.fft.fft2(img) # Calculate FFT
+HFEfilt = np.fft.fftshift(HFEfilt)
+
+HFEfilt3 = np.fft.fft2(img3) # Calculate FFT
+HFEfilt3 = np.fft.fftshift(HFEfilt3)
+
+HFEfilt2 = np.fft.fft2(img2) # Calculate FFT
+HFEfilt2 = np.fft.fftshift(HFEfilt2)
+
+
+HFEfilt,HFEfilt2,HFEfilt3
+
+# Apply HFE filter to FFT of original images
+HFE = HFEfilt * npFFTS
+HFE
+
+"""
+Implement 2D-FFT algorithm
+
+Input : Input Image
+Output : 2D-FFT of input image
+"""
+def fft2d(image):
+    # 1) compute 1d-fft on columns
+    fftcols = np.array([row for row in image]).transpose()
+
+    # 2) next, compute 1d-fft on in the opposite direction (for each row) on the resulting values
+    
+    return np.array([(row) for row in fftcols]).transpose()
+
+
+#Perform IFFT (implemented here using the np.fft function)
+HFEfinal = (np.conjugate(fft2d(np.conjugate(HFE)))) / (P * Q)
+
+
+#applying the function to a sample of images in our training dataset
+def training_data():
+  training_data = train_datagen.flow_from_directory(tb_datadir,
+                                              HFEfinal=True, 
+                                              target_size= (64,64),
+                                              class_mode= "binary",
+                                              batch_size=32,
+                                              subset= "training"
+                                              )
+  return training_data
+
+
+
+
+
+
+#creatin our custom model without data augmentation
+#this is the first model we are ,buh it doesnt have any augmentation in it
+from tensorflow.keras.layers import BatchNormalization
+from keras.layers import Dropout
+model = Sequential()
+model.add(Conv2D(16, (3, 3), activation='relu',input_shape=IMAGE_SIZE+[3]))
+model.add(MaxPooling2D((2, 2)))
+model.add(Conv2D(32, (3, 3), activation='relu'))
+model.add(MaxPooling2D((2,2)))
+
+model.add(ZeroPadding2D((1,1)))
+model.add(Conv2D(32, kernel_size= (3,3), activation= 'relu', padding='same',
+strides= (1,1)))
+model.add(ZeroPadding2D((1,1)))
+model.add(Conv2D(32, kernel_size=(3, 3), activation='relu'))
+model.add(AveragePooling2D(pool_size=(2,2), strides=(2,2), padding='valid'))
+model.add(BatchNormalization())
+
+model.add(Flatten())
+model.add(Dense(units = 64, kernel_initializer = 'uniform', activation = 'relu'))
+model.add(Dropout(0.4))
+model.add(Dense(units = 32, kernel_initializer = 'uniform', activation = 'relu'))
+model.add(Dropout(0.4))
+model.add(Dense(units = 16, kernel_initializer = 'uniform', activation = 'relu'))
+model.add(Dropout(0.4))
+model.add(Dense(units = 1, activation = 'sigmoid'))
+model.compile(loss='binary_crossentropy',optimizer='adam',metrics=['accuracy'])
+
+model.fit(training_data, validation_data=validation_data, epochs=20)
+
+model.summary()
+
+
+
+
+from tensorflow.keras import layers
+from tensorflow import keras
+from tensorflow.keras.models import Sequential
+
+##using augementation techniques on the 2rd model
+data_augemantation=keras.Sequential([
+    layers.experimental.preprocessing.RandomFlip('horizontal',
+                                                input_shape=IMAGE_SIZE+[3]) ,
+    layers.experimental.preprocessing.RandomRotation(0.1),
+    layers.experimental.preprocessing.RandomZoom(0.1)                                                                 
+])
+
+#creating our 2rd  custom model with data augmentation
+from tensorflow.keras.layers import BatchNormalization
+from keras.layers import Dropout
+model1 = Sequential([
+     data_augemantation,
+     layers.Conv2D(16, (3, 3), activation='relu',input_shape=IMAGE_SIZE+[3]),
+     layers.MaxPooling2D((2, 2)),
+     layers.Conv2D(32, (3, 3), activation='relu'),
+     layers.MaxPooling2D((2,2)),
+    
+     layers.ZeroPadding2D((1,1)),
+     layers.Conv2D(32, kernel_size= (3,3), activation= 'relu', padding='same',strides= (1,1)),
+     layers.ZeroPadding2D((1,1)),
+     layers.Conv2D(32, kernel_size=(3, 3), activation='relu'),
+     layers.AveragePooling2D(pool_size=(2,2), strides=(2,2), padding='valid'),
+     layers.BatchNormalization(),
+
+     layers.Flatten(),
+     layers.Dense(units = 64, kernel_initializer = 'uniform', activation = 'relu'),
+     layers.Dropout(0.4),
+     layers.Dense(units = 32, kernel_initializer = 'uniform', activation = 'relu'),
+     layers.Dropout(0.4),
+     layers.Dense(units = 16, kernel_initializer = 'uniform', activation = 'relu'),
+     layers.Dropout(0.4),
+     layers.Dense(units = 1, activation = 'sigmoid'),
+
+])
+
+model1.compile(loss='binary_crossentropy',optimizer='adam',metrics=['accuracy'])
+
+model1.fit(training_data, validation_data=validation_data, epochs=20)
+
+
+
+
+
+#importing resnet from keras
+resnet=ResNet152(input_shape=IMAGE_SIZE+[3],weights='imagenet',include_top=False)
+
+#importing Densenet
+densenet=DenseNet201(input_shape=IMAGE_SIZE+[3],weights='imagenet',include_top=False)
+
+type(densenet)
+
+for layer in resnet.layers:
+  layer.trainable=False  #we are not training the inner layers
+
+for layer in densenet.layers:
+  layer.trainable=False
+
+type(resnet)
+
+type(densenet)
+
+resnet.summary()
+
+x=Flatten()(resnet.output) #flattening the output last layer
+y=Flatten()(densenet.output)
+
+prediction1=Dense(1,activation='sigmoid')(x) #adding our custuom layer to have a output of 1 layer
+prediction2=Dense(1,activation='sigmoid')(y)
+
+#creating the 2 model objects
+model_resnet=Model(inputs=resnet.input,outputs=prediction1)
+model_densenet=Model(inputs=densenet.input,outputs=prediction2)
+
+##lets look at the structure of the models
+model_resnet.summary()
+
+model_resnet.compile(
+    loss='categorical_crossentropy',
+    optimizer='adam',
+    metrics=['accuracy']
+)
+
+model_densenet.compile(
+    loss='categorical_crossentropy',
+    optimizer='adam',
+    metrics=['accuracy']
+)
+
+#fitting the model
+model_resnet.fit(training_data, validation_data=validation_data, epochs=20)
+
+model_densenet.fit(training_data, validation_data=validation_data, epochs=20)
+
+
+
+
+#using ensemble of networks to determine better model
+
+from sklearn.metrics import accuracy_score
+from sklearn.model_selection import train_test_split
+
+models=[model,model1,model_resnet,model_densenet]
+
+predicts=[model.predict(validation_data) for model in models]
+predicts=np.array(predicts)
+sum_up=np.sum(predicts,axis=0)
+
+ensemble_prediction=np.argmax(sum_up,axis=1)
+
+predicts1=model.predict(validation_data)
+predicts2=model1.predict(validation_data)
+predicts3=model_resnet.predict(validation_data)
+predicts4=model_densenet.predict(validation_data)
+
+model.evaluate(training_data) # determining the perfomance of ou model
+
+model.evaluate(validation_data)[1]
+
+predicts1[:10]
+
+sum_list=[]
+for i in sum_up:
+  sum_list.append(i)
+
+max1=max(sum_list)
+
+ensemble__accuarcy_prediction=max1
+
+predicts_1=[]
+for i in predicts1:
+  predicts_1.append(i)
+
+model_pred=max(predicts_1)
+model_pred
+
+accuracy1=model.evaluate(validation_data)[1]
+accuracy2=model1.evaluate(validation_data)[1]
+accuracy3=model_resnet.evaluate(validation_data)[1]
+accuracy4=model_densenet.evaluate(validation_data)[1]
+
+print('Model accuracy score =' ,accuracy1)
+print('Model1 accuracy score =' ,accuracy2)
+print('Model_resnet accuracy score =' ,accuracy3)
+print('Model_densenet accuracy score =' ,accuracy4)
+print('Average ensemble accuracy score =' ,ensemble__accuarcy_prediction)
+
+###weighted average ensemble
+models=[model,model1,model_resnet,model_densenet]
+predicts=[modelf.predict(val_data) for modelf in models]
+predicts=np.array(predicts)
+weights=[0.7,0.3,0,5,0.7] #random weights
+
+#from the above the custom model with data augmentation has a better perfomance, so we gonna use it to create our model for prediction
+#we gonna choose model1 based on perfomance to do prediction on our validation data
+
+pred= model1.predict(validation_data, steps=np.ceil(validation_data.samples/validation_data.batch_size))
+pred= (pred > 0.6)
+
+validation_data_labels=validation_data.classes
+
+#printing a confusion matrix for better visualization
+from sklearn.metrics import confusion_matrix, accuracy_score, classification_report
+from mlxtend.plotting import plot_confusion_matrix
+cm= confusion_matrix(validation_data.classes, pred)
+plot_confusion_matrix(cm, figsize=(15,10))
+plt.xlabel('Prediction')
+plt.ylabel('Truth')
+
+#explanation the above model
+#143 times the truth value was 0 and the model actually predicted it correctly but the model also made some errors
+
+print(accuracy_score(validation_data.classes, pred))
+print(classification_report(validation_data.classes, pred))#this gives the specificity(precision),f1_score and weighted average as well
+
