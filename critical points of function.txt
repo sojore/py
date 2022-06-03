@@ -1,0 +1,55 @@
+%so the given polynomial will depend on the specific no. 
+%now given the n0.  is 9427691202,this will equate to 9427691232 ,note we are replacing the zeros with 3
+%so we write the polynomial as followssyms x y
+
+syms x y 
+%writing the polynomial function itself
+f = 9*(x^3)-4*(x^2*y)+2*(x*y^2)-7*(y^3)+6*(x^2)-9*x*y+1*(y^2)-2*x+3*y-2;
+
+
+%solving and classifying the critical points
+%calculating the first partial derivertiives of the polynomial
+fx=diff(f,x);
+fy=diff(f,y);
+fy;
+fx;
+
+%we use the functio solve to find the critical points of the polynomial
+[x_val,y_val]=solve(fx,fy); 
+[x_val,y_val]
+
+%calculating 2rd order partial derivertives to classify the critical points
+fxx=diff(fx,x);
+fxy=diff(fx,y);
+fyy=diff(fy,y);
+
+
+%computing the Hessian determinant value for classification
+Hessian_determinant_function=fxx*fyy-fxy^2;
+
+%creating a table for the critical points
+x_val = x_val(1:1); y_val = y_val(1:1);
+for k = 1:1
+    [x_val(k), y_val(k), subs(Hessian_determinant_function, [x,y], [x_val(k), y_val(k)]), ...
+       subs(fxx, [x,y], [x_val(k), y_val(k)])]
+end
+
+
+%classifying points as saddel minimum point maximum
+gradient_function_f=jacobian(f,[x,y]);
+hessian_value=jacobian(gradient_function_f,[x,y]);
+
+
+%from the obtained critical points above (0,0) and x_val and y_val ,we
+%classify then using the hessian matrix that if the val value is less than
+%0,then the point is maximum point,if the point is greater than zero the
+%point is minimum point,and if the val is equal to zero the point is a
+%saddle point,,in our case the first critical point is a minimum point
+%while (x_val[0],y_val[0]) is a maximum point
+first_critical_point=[0,0]
+second_critical_point=[x_val,y_val]
+h_first_val=subs(f,[x,y],first_critical_point)
+h_second_val=subs(f,[x,y],second_critical_point)
+hessian_first_val=subs(hessian_value,[x,y],first_critical_point)
+hessian_second_val=subs(hessian_value,[x,y],second_critical_point)  
+
